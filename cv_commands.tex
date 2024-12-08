@@ -1,0 +1,262 @@
+\def\me{\firstname\ \lastname}
+\def\citeme{\textbf{\me}}
+
+\def\PUBLIC{1}
+\def\VERBOSE{1}
+\def\LINEARFORMAT{0}
+
+\if\VERBOSE0
+    \def\LINEARFORMAT{1}
+\fi
+
+
+\usepackage[
+    margin=0.5in,
+    includehead,
+    includefoot,
+    nomarginpar
+]{geometry}
+
+\usepackage[
+    pdftitle={\me's CV},
+    pdfauthor={\me},
+    hidelinks
+]{hyperref}
+\usepackage[
+    open,
+    openlevel=2,
+    atend
+]{bookmark}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{enumitem}
+\setlist{nolistsep}
+
+% TODO: fix labels being slightly lower
+\makeatletter
+    \newcommand{\linkdest}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
+\makeatother
+
+\newcounter{cvsection}
+\newcounter{cvsectioniter}
+\newcounter{cvactivity}
+
+\def\cvsectiontitle{}
+\def\cvsectionlastpage{}
+
+\renewcommand{\section}[1]{%
+    \setcounter{cvactivity}{0}
+    \setcounter{cvsectioniter}{0}
+    \refstepcounter{cvsection}
+    \def\cvsectiontitle{#1}
+}
+
+
+\newcommand{\activity}[1]{%
+    \refstepcounter{cvactivity}%
+    %
+    \def\thispage{\getpagerefnumber{cv-sect-\thecvsection-act-\thecvactivity}}%
+    %
+    \def\makeactivitylabel{0}
+    \def\activitylabel{}
+    \ifthenelse{
+        \equal{\thecvactivity}{1}
+    }{
+        \def\makeactivitylabel{1}%
+        \def\activitylabel{%
+            \if\LINEARFORMAT0 \fi%
+            {\textsc{\cvsectiontitle}}%
+            \linkdest{\cvsectiontitle}%
+            \bookmark[level=0, dest={\cvsectiontitle}]{\cvsectiontitle}%
+            \label{cv-sect-\thecvsection-\thecvsectioniter}%
+        }
+    }{
+        \def\lastpage{\getpagerefnumber{cv-sect-\thecvsection-\thecvsectioniter}}
+
+        \ifnum\thispage>\lastpage
+            \def\makeactivitylabel{1}%
+            \def\activitylabel{%
+                {\textsc{\cvsectiontitle\ (continued)}}%
+                \refstepcounter{cvsectioniter}%
+                \label{cv-sect-\thecvsection-\thecvsectioniter}%
+            }
+        \fi
+    }%
+    \begin{flushleft}%
+        \if\LINEARFORMAT0
+            \begin{tabular}{@{}p{0.2\linewidth}@{\hskip 0.05\linewidth}p{0.75\linewidth}@{}}
+                \activitylabel & \begin{parbox}[t]{\linewidth}
+                    {#1}
+                \end{parbox}
+            \end{tabular}
+        \else%
+            \ifthenelse{%
+                \equal{\makeactivitylabel}{0}
+            }{%
+            }{%
+                \activitylabel
+                \vspace*{0.5\baselineskip}
+                \hrule\, \\ % \vspace{1em} \hrule\, \\%
+            }%
+            #1
+        \fi
+        \label{cv-sect-\thecvsection-act-\thecvactivity}%
+    \end{flushleft}%
+    %
+    \if\LINEARFORMAT1%
+        \vspace{-\baselineskip}%
+    \fi%
+}
+
+% indented list, no bullet points
+\NewDocumentEnvironment{cvlist}{+b}{
+    \begin{itemize}[noitemsep, label=]
+        {#1}
+    \end{itemize}
+}
+
+% indented list, with bullet points
+\NewDocumentEnvironment{bcvlist}{+b}{
+    \begin{itemize}[noitemsep]
+        {#1}
+    \end{itemize}
+}
+
+% left align text and right align other text
+% 1: left aligned
+% 2: right alignted
+\newcommand{\leftrighttext}[2]{%
+    {#1} \hspace*{\fill} \mbox{#2}\par%
+}
+% activity with a name and date
+% 1: name
+% 2: date
+\newcommand{\timedactivity}[3][]{
+    \leftrighttext{#2}{#3}%
+    \ifstrempty{#1}{%
+        \vspace*{-\baselineskip}
+    }{%
+        \if\VERBOSE0%
+            \vspace*{-\baselineskip}
+        \fi
+    }
+}
+
+% title of an activity, with a date
+% 1: title
+% 2: date
+\newcommand{\timedtitle}[2]{%
+    \timedactivity[break]{%
+        \if\VERBOSE1%
+            \if\LINEARFORMAT0%
+                #1%
+            \else%
+                \textit{#1}%
+            \fi%
+        \fi%
+    }{#2}%
+    \if\VERBOSE1%
+        \if\LINEARFORMAT0%
+            \hrule\,%
+        \fi%
+        
+    \fi
+}
+
+% job information
+% 1: job title
+% 2: employer
+% 3: city/location
+\newcommand{\job}[3]{%
+    \if\VERBOSE1 \vspace*{0cm} \fi%
+    \leftrighttext{%
+        \ifthenelse{
+            \equal{#1}{}
+        }{
+        }{%
+            \textbf{#1}, %
+        }%
+        {#2}
+    }{%
+        \if\VERBOSE1%
+            {#3}%
+        \fi%
+    }%
+}
+
+% information about a presentation/talk
+% optional: co-presenters
+% 2: conference/seminar/etc
+% 3: date
+% 4: name
+\newcommand{\talk}[4][]{
+    \activity{%
+        \if\VERBOSE0%
+            \timedactivity{\textbf{#2}}{#3}%
+            \,
+        \else%
+            \timedactivity[break]{\textbf{#2}}{#3}%%
+            \begin{cvlist}%
+                \item \textit{#4}%
+                \ifstrempty{#1}{}{, with #1}%
+            \end{cvlist}%
+        \fi%
+    }
+}
+
+% extra information that only gets included in a verbose compilation
+% 1: extra information
+\NewDocumentEnvironment{extracontent}{+b}{
+    \if\VERBOSE1
+        #1
+    \else
+        
+    \fi
+}
+
+% formatting of first page
+% does not have header
+\usepackage{lastpage}
+\fancypagestyle{firstpage}{
+    \pagestyle{fancy}
+    \fancyhead{}
+    \fancyfoot{}
+    \renewcommand{\headrulewidth}{0pt}
+    % footer has page numbers
+    \fancyfoot[L]{\textit{Last updated}: \today}
+    \fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
+}
+
+% centering in a table
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+
+% for the first page, use firstpage style
+\thispagestyle{firstpage}
+% for other pages...
+\pagestyle{fancy}
+% add header
+\fancyhead[C]{\textsc{\me\ -- Curriculum Vitae} \\}
+\fancyfoot{}
+% footer has page numbers
+\fancyfoot[R]{Page \thepage\ of \pageref{LastPage}}
+
+\newcommand{\makeintro}{
+    \begin{center}
+        \huge \me \\
+        \normalsize
+        \vspace{0.5cm}
+        \begin{tabularx}{\linewidth}{@{}CCC@{}}
+            \href{mailto:\email}{\email}
+            &
+            \url{\website}
+            &
+            \city
+        \end{tabularx}
+        \vspace{0cm}
+        \if\LINEARFORMAT0 \hrule \fi
+    \end{center}
+}
